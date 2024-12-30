@@ -38,6 +38,8 @@ pub fn number_type_from_numpy(py: Python, dtype: &Bound<PyArrayDescr>) -> PyResu
     NumberType::I64
   } else if dtype.is_equiv_to(&numpy::dtype_bound::<half::f16>(py)) {
     NumberType::F16
+  } else if dtype.is_equiv_to(&numpy::dtype_bound::<half::bf16>(py)) {
+    NumberType::B16
   } else if dtype.is_equiv_to(&numpy::dtype_bound::<f32>(py)) {
     NumberType::F32
   } else if dtype.is_equiv_to(&numpy::dtype_bound::<f64>(py)) {
