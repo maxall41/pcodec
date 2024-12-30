@@ -7,6 +7,7 @@ use pyo3::{Bound, PyErr, PyResult, Python};
 pub fn core_dtype_from_str(s: &str) -> PyResult<NumberType> {
   match s.to_uppercase().as_str() {
     "F16" => Ok(NumberType::F16),
+    "BF16" => Ok(NumberType::B16),
     "F32" => Ok(NumberType::F32),
     "F64" => Ok(NumberType::F64),
     "I16" => Ok(NumberType::I16),

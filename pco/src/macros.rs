@@ -25,6 +25,7 @@ dtype_dispatch::build_dtype_macros!(
   Number,
   {
     F16 => half::f16,
+    B16 => half::bf16,
     F32 => f32,
     F64 => f64,
     I16 => i16,

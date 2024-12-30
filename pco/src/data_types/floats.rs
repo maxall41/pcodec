@@ -1,6 +1,6 @@
 use std::mem;
 
-use half::f16;
+use half::{f16,bf16};
 
 use super::ModeAndLatents;
 use crate::chunk_config::ModeSpec;
@@ -312,6 +312,120 @@ impl Float for f16 {
   }
 }
 
+impl Float for bf16 {
+  const PRECISION_BITS: Bitlen = Self::MANTISSA_DIGITS as Bitlen - 1;
+  const ZERO: Self = bf16::ZERO;
+  const MAX_FOR_SAMPLING: Self = bf16::from_bits(30719); // Half of MAX size.
+
+  #[inline]
+  fn abs(self) -> Self {
+    Self::from_bits(self.to_bits() & 0x7FFF)
+  }
+
+  fn inv(self) -> Self {
+    Self::ONE / self
+  }
+
+  #[inline]
+  fn round(self) -> Self {
+    Self::from_f32(self.to_f32().round())
+  }
+
+  #[inline]
+  fn exp2(power: i32) -> Self {
+    Self::from_bits(((15 + power) as u16) << Self::PRECISION_BITS)
+  }
+
+  #[inline]
+  fn from_f64(x: f64) -> Self {
+    Self::from_f64(x)
+  }
+
+  #[inline]
+  fn to_f64(self) -> f64 {
+    self.to_f64()
+  }
+
+  #[inline]
+  fn is_normal(self) -> bool {
+    self.is_normal()
+  }
+
+  #[inline]
+  fn is_sign_positive_(&self) -> bool {
+    self.is_sign_positive()
+  }
+
+  #[inline]
+  fn exponent(&self) -> i32 {
+    (self.abs().to_bits() >> Self::PRECISION_BITS) as i32 - 15
+  }
+
+  #[inline]
+  fn trailing_zeros(&self) -> u32 {
+    self.to_bits().trailing_zeros()
+  }
+
+  #[inline]
+  fn max(a: Self, b: Self) -> Self {
+    Self::max(a, b)
+  }
+
+  #[inline]
+  fn min(a: Self, b: Self) -> Self {
+    Self::min(a, b)
+  }
+
+  #[inline]
+  fn to_latent_bits(self) -> Self::L {
+    self.to_bits()
+  }
+
+  #[inline]
+  fn int_float_from_latent(l: Self::L) -> Self {
+    let mid = Self::L::MID;
+    let (negative, abs_int) = if l >= mid {
+      (false, l - mid)
+    } else {
+      (true, mid - 1 - l)
+    };
+    let gpi = 1 << Self::MANTISSA_DIGITS;
+    let abs_float = if abs_int < gpi {
+      Self::from_f32(abs_int as f32)
+    } else {
+      Self::from_bits(Self::from_f32(gpi as f32).to_bits() + (abs_int - gpi))
+    };
+    if negative {
+      -abs_float
+    } else {
+      abs_float
+    }
+  }
+
+  #[inline]
+  fn int_float_to_latent(self) -> Self::L {
+    let abs = self.abs();
+    let gpi = 1 << Self::MANTISSA_DIGITS;
+    let gpi_float = Self::from_f32(gpi as f32);
+    let abs_int = if abs < gpi_float {
+      abs.to_f32() as Self::L
+    } else {
+      gpi + (abs.to_bits() - gpi_float.to_bits())
+    };
+    if self.is_sign_positive() {
+      Self::L::MID + abs_int
+    } else {
+      // -1 because we need to distinguish -0.0 from +0.0
+      Self::L::MID - 1 - abs_int
+    }
+  }
+
+  #[inline]
+  fn from_latent_numerical(l: Self::L) -> Self {
+    Self::from_f32(l as f32)
+  }
+}
+
 macro_rules! impl_float_number {
   ($t: ty, $latent: ty, $sign_bit_mask: expr, $header_byte: expr) => {
     impl Number for $t {
@@ -394,6 +508,7 @@ impl_float!(f64, u64, 1023);
 impl_float_number!(f32, u32, 1_u32 << 31, 5);
 impl_float_number!(f64, u64, 1_u64 << 63, 6);
 impl_float_number!(f16, u16, 1_u16 << 15, 9);
+impl_float_number!(bf16, u16, 1_u16 << 15, 10);
 
 #[cfg(test)]
 mod tests {
@@ -443,6 +558,7 @@ mod tests {
     assert_eq!(<f32 as Float>::exp2(2), 4.0);
 
     assert_eq!(<f16 as Float>::exp2(0), f16::ONE);
+    assert_eq!(<bf16 as Float>::exp2(0), bf16::ONE);
     assert_eq!(<f64 as Float>::exp2(0), 1.0);
   }
 

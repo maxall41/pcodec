@@ -1,7 +1,7 @@
 use crate::data_types::Number;
 use crate::errors::PcoResult;
 use crate::{standalone, ChunkConfig, DeltaSpec, ModeSpec};
-use half::f16;
+use half::{f16,bf16};
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
