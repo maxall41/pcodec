@@ -73,6 +73,22 @@ fn simple_decompress_into_generic<T: Number + Element>(
 }
 
 pub fn register(m: &Bound<PyModule>) -> PyResult<()> {
+  #[pyfunction]
+  fn simple_compress_bf16<'py>(
+    py: Python<'py>,
+    nums: &Bound<'_, PyUntypedArray>,
+    config: &PyChunkConfig,
+  ) -> PyResult<Bound<'py, PyBytes>> {
+    let config: ChunkConfig = config.try_into()?;
+    let number_type = NumberType::B16
+    match_number_enum!(
+      number_type,
+      NumberType<T> => {
+        simple_compress_generic(py, nums.downcast::<PyArray1<T>>()?, &config)
+      }
+    )
+  }
+  m.add_function(wrap_pyfunction!(simple_compress_bf16, m)?)?;
   /// Compresses an array into a standalone format.
   ///
   /// :param nums: numpy array to compress. This may have any shape.
