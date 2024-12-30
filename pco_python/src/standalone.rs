@@ -80,7 +80,7 @@ pub fn register(m: &Bound<PyModule>) -> PyResult<()> {
     config: &PyChunkConfig,
   ) -> PyResult<Bound<'py, PyBytes>> {
     let config: ChunkConfig = config.try_into()?;
-    let number_type = NumberType::B16
+    let number_type = NumberType::B16;
     match_number_enum!(
       number_type,
       NumberType<T> => {
