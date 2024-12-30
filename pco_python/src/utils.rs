@@ -46,7 +46,7 @@ pub fn number_type_from_numpy(py: Python, dtype: &Bound<PyArrayDescr>) -> PyResu
     NumberType::F64
   } else {
     return Err(PyTypeError::new_err(format!(
-      "Unsupported data type: {:?}",
+      "Unsupported data type (C): {:?}",
       dtype
     )));
   };
